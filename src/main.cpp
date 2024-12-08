@@ -14,25 +14,39 @@ const int BRICK_HEIGHT = 20;
 const int BRICK_ROWS = 5;
 const int BRICK_COLS = 10;
 
-struct Brick {
-    sf::RectangleShape shape;
-    bool destroyed{false};
-
-    Brick(float x, float y) {
-        shape.setSize(sf::Vector2f(BRICK_WIDTH, BRICK_HEIGHT));
-        shape.setPosition(x, y);
-        shape.setFillColor(sf::Color::Blue);
-    }
-};
 
 class GameObject {
 public:
-    virtual void update() = 0;                  // Обновление состояния объекта (виртуальный метод)
+    virtual void update() = 0;                      // Обновление состояния объекта (виртуальный метод)
     virtual void draw(sf::RenderWindow& window) = 0;  // Отрисовка объекта на экране
     virtual sf::FloatRect getBounds() const = 0;  // Границы объекта для проверки столкновений
     virtual ~GameObject() = default;              // Виртуальный деструктор для корректного удаления
 };
 
+class Brick : public GameObject{
+
+public:
+    sf::RectangleShape shape;
+    bool destroyed{false};
+    Brick(float x, float y) {
+        shape.setSize(sf::Vector2f(BRICK_WIDTH, BRICK_HEIGHT));
+        shape.setPosition(x, y);
+        shape.setFillColor(sf::Color::Blue);
+    }
+    void update() override {
+
+    }
+    void draw(sf::RenderWindow& window) override {
+        window.draw(shape);
+    }
+    sf::FloatRect getBounds() const override {
+        return shape.getGlobalBounds();
+    }
+
+    void setPosition(float x, float y) {
+        shape.setPosition(x, y);
+    }
+};
 
 class Paddle : public GameObject {
 private:
@@ -70,7 +84,7 @@ public:
 int main() {
 
     int lives = 3;
-    // Создаем окно размером 800x600 пикселей с заголовком "SFML Window"
+    // Создаем окно размером 800x600 пикселей с заголовком "Arkanoid"
     sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Arkanoid");
 
     // Загрузка шрифта
@@ -78,9 +92,9 @@ int main() {
     if (!font.loadFromFile("/home/kpd/Documents/develop/fast2dcore/fonts/Arial.ttf")) { //TODO сделать относительным
         return -1; // Завершаем, если шрифт не удалось загрузить
     }
-    GameObject nub;
-    nub.shape() = sf::RectangleShape(sf::Vector2f(PADDLE_WIDTH, PADDLE_HEIGHT));
-    nub.shape.setFillColor(sf::Color::Green);
+    //GameObject nub;
+    //nub.shape() = sf::RectangleShape(sf::Vector2f(PADDLE_WIDTH, PADDLE_HEIGHT));
+    //nub.shape.setFillColor(sf::Color::Green);
     //nub.setPosition(WINDOW_WIDTH / 2 - PADDLE_WIDTH / 2, WINDOW_HEIGHT - 50);
     // Создаем текст для отображения жизней
     sf::Text livesText;
@@ -110,20 +124,41 @@ int main() {
         for (int j = 0; j < BRICK_COLS; ++j) {
             float x = j * (BRICK_WIDTH + 5) + 50;
             float y = i * (BRICK_HEIGHT + 5) + 50;
-            bricks.emplace_back(x, y);
+            bricks.push_back(Brick(x,y));
+        }
+    }
+    bool start = false;
+    // Отрисовка платформы, мяча и кирпичей
+    window.draw(paddle);
+    window.draw(ball);
+    window.draw(livesText); // Отображение жизней на экране
+
+    for (const auto& brick : bricks) {
+        if (!brick.destroyed) {
+            window.draw(brick.shape);
         }
     }
 
+    // Отображение содержимого окна
+    window.display();
     // Игровой цикл
     while (window.isOpen()) {
         // Обработка событий
         sf::Event event;
+
+
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
             }
         }
-
+        if (!start)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
+                start = true;
+            }
+            continue;
+        }
         // Управление платформой
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && paddle.getPosition().x > 0) {
             paddle.move(-0.5f, 0);
